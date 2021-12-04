@@ -3,7 +3,9 @@
 ## Pseudocode
 
 
-![1](static/pseudo1.png)
+![1](static/pseudo_alpha.png)
+![2](static/pseudo_beta.png)
+
 
 
 ### Parameters:
