@@ -1,0 +1,11 @@
+# .gitignore
+__pycache__
+venv
+env
+.env
+.pytest_cache
+.coverage
+.idea
+lightning_logs
+.ckpt
+example.ckpt
