@@ -9,6 +9,7 @@ import logging
 from pprint import pprint
 from collections import namedtuple, deque
 from termcolor import colored
+from scipy.spatial.distance import cdist
 
 import gym
 import pettingzoo

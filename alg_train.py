@@ -42,8 +42,9 @@ if __name__ == '__main__':
 
     # --------------------------- # CREATE ENV # -------------------------- #
     NUMBER_OF_AGENTS = 1
+    MAX_STEPS = 2
     ENV_NAME = ''
-    env = FedRLEnv()
+    env = FedRLEnv(max_steps=MAX_STEPS)
 
     NUMBER_OF_GAMES = 10
 
