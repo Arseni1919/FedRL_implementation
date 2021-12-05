@@ -68,15 +68,15 @@ class ALGPlotter:
                 self.ax_1.cla()
                 # PLOT POSITIONS
                 for pos in env.positions:
-                    self.ax_1.plot(pos.x, pos.y, color=pos.color, marker=pos.marker, markersize=3)
+                    self.ax_1.plot(pos.x, pos.y, color=pos.color, marker=pos.marker, markersize=10)
 
                 # PLOT AGENTS
                 for agent in env.agents:
-                    self.ax_1.plot(agent.x, agent.y, color=agent.color, marker=agent.marker, markersize=7)
+                    self.ax_1.plot(agent.x, agent.y, color=agent.color, marker=agent.marker, markersize=14)
 
                     # PLOT DOMAINS
                     for pos in agent.domain:
-                        self.ax_1.plot(pos.x, pos.y, color=agent.color, marker=agent.marker, markersize=7, alpha=0.2)
+                        self.ax_1.plot(pos.x, pos.y, color=agent.color, marker=agent.marker, markersize=14, alpha=0.2)
 
                 # self.ax_1.legend()
                 self.ax_1.set_title('Env')

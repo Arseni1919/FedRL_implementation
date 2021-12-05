@@ -12,8 +12,8 @@ def train():
         env.reset()
 
         while not done:
-            actions = {}
-            observations, rewards, done, infos = env.step()
+            actions = {agent.name: random.choice(env.action_space(agent)) for agent in env.agents}
+            observations, rewards, done, infos = env.step(actions)
 
             steps += 1
             plotter.plot(steps, env, [], [])
@@ -42,9 +42,12 @@ if __name__ == '__main__':
 
     # --------------------------- # CREATE ENV # -------------------------- #
     NUMBER_OF_AGENTS = 1
-    MAX_STEPS = 2
+    MAX_STEPS = 10
+    # SIDE_SIZE = 8
+    SIDE_SIZE = 16
+    # SIDE_SIZE = 32
     ENV_NAME = ''
-    env = FedRLEnv(max_steps=MAX_STEPS)
+    env = FedRLEnv(max_steps=MAX_STEPS, side_size=SIDE_SIZE)
 
     NUMBER_OF_GAMES = 10
 
