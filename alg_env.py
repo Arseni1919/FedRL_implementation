@@ -19,8 +19,8 @@ class Agent:
         self.type = agent_type
         self.metric_radius = metric_radius
         self. domain = []
-        # self.distance_type = 'chebyshev'
-        self.distance_type = 'cityblock'
+        self.distance_type = 'chebyshev'
+        # self.distance_type = 'cityblock'
         self.marker = 'p'
 
         if self.type == 'alpha':
