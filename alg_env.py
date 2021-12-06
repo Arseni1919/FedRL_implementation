@@ -82,8 +82,7 @@ class FedRLEnv:
         self.pos_dict = {}
 
         # FOR RENDERING
-
-
+        self.reset()
 
     def reset(self):
         self.steps_counter = 0

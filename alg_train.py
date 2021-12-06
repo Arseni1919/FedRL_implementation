@@ -3,6 +3,7 @@ from alg_plotter import ALGPlotter
 from alg_env import FedRLEnv
 from alg_nets import CriticNet, ActorNet
 
+
 def train():
     best_score = - math.inf
     for i_episode in range(M_EPISODE):
@@ -13,22 +14,55 @@ def train():
         observations = env.reset()
 
         while not done:
-            actions = {agent.name: random.choice(env.action_spaces()[agent.name]) for agent in env.agents}
-            new_observations, rewards, done, infos = env.step(actions)
 
+            # COMPUTE C_BETA
+            # TODO
+
+            # SELECT ACTION
+            actions = {agent.name: random.choice(env.action_spaces()[agent.name]) for agent in env.agents}
+            # TODO
+
+            # EXECUTE ACTION
+            new_observations, rewards, done, infos = env.step(actions)
+            # TODO
+
+            # OBSERVE AND STORE
+            # TODO
+
+            # SAMPLE
+            # TODO
+
+            # CALL C_BETA
+            # TODO
+
+            # COMPUTE Y
+            # TODO
+
+            # UPDATE ALPHA
+            # TODO
+
+            # COMPUTE C_ALPHA
+            # TODO
+
+            # UPDATE BETA
+            # TODO
+
+            # UPDATE OBSERVATIONS VARIABLE
             observations = new_observations
+
+            # PLOT
             scores.append(sum(rewards.values()))
             steps += 1
             plotter.plot(steps, env, scores)
             print('', end='')
+
+        # PRINT AND SAVE
         print(f'Finished episode {i_episode} with reward: {sum(scores)}')
-
-
-    # SAVE
-    # average_score = sum(average_result_dict.values())
-    # if average_score > best_score:
-    #     best_score = average_score
-    #     save_results(SAVE_PATH, actor)
+        # SAVE
+        # average_score = sum(average_result_dict.values())
+        # if average_score > best_score:
+        #     best_score = average_score
+        #     save_results(SAVE_PATH, actor)
 
 
 def load_and_play(env_to_load, times, path):
@@ -71,7 +105,7 @@ if __name__ == '__main__':
     # SIDE_SIZE = 8
     SIDE_SIZE = 16
     # SIDE_SIZE = 32
-    ENV_NAME = ''
+    ENV_NAME = 'grid'
     env = FedRLEnv(max_steps=MAX_STEPS, side_size=SIDE_SIZE)
 
     NUMBER_OF_GAMES = 10
@@ -101,7 +135,7 @@ if __name__ == '__main__':
     NEPTUNE = False
     PLOT_LIVE = True
     SAVE_RESULTS = True
-    SAVE_PATH = f'data/actor_{ENV_NAME}.pt'
+    SAVE_PATH = f'data/critic_{ENV_NAME}.pt'
     plotter = ALGPlotter(plot_life=PLOT_LIVE, plot_neptune=NEPTUNE, name='my_run_FedRL', tags=[ENV_NAME])
     plotter.neptune_init()
 
