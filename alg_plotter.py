@@ -10,6 +10,16 @@ logging.error('And non-ASCII stuff, too, like Øresund and Malmö')
 """
 
 
+def get_weighted_coverage_list(coverage_list):
+    weighted_coverage_list = []
+    item = coverage_list[0]
+    alpha = 0.9
+    for next_item in coverage_list:
+        item = item * alpha + (1 - alpha) * next_item
+        weighted_coverage_list.append(item)
+    return weighted_coverage_list
+
+
 class ALGPlotter:
     """
     This object is responsible for plotting, logging and neptune updating.
@@ -48,7 +58,7 @@ class ALGPlotter:
 
         print(colored(f'~[INFO]: "ALGPlotter instance created."', 'green'))
 
-    def plot(self, i, env, scores, avg_scores,
+    def plot(self, i, env, scores,
              # actor_mean, actor_std, loss, loss_critic, actor_output_tensor, observations_tensor, state_stat_mean, state_stat_std
              ):
         if self.plot_life:
@@ -84,6 +94,7 @@ class ALGPlotter:
                 # AX 4
                 self.ax_2.cla()
                 self.ax_2.plot(scores, label='scores')
+                avg_scores = get_weighted_coverage_list(scores)
                 self.ax_2.plot(avg_scores, label='avg scores')
                 self.ax_2.set_title('Scores')
                 self.ax_2.legend()

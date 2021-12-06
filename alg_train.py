@@ -9,15 +9,19 @@ def train():
 
         done = False
         steps = 0
-        env.reset()
+        scores = []
+        observations = env.reset()
 
         while not done:
             actions = {agent.name: random.choice(env.action_space(agent)) for agent in env.agents}
-            observations, rewards, done, infos = env.step(actions)
+            new_observations, rewards, done, infos = env.step(actions)
 
+            observations = new_observations
+            scores.append(sum(rewards.values()))
             steps += 1
-            plotter.plot(steps, env, [], [])
-        print(f'Finished episode {i_episode} with reward: ')
+            plotter.plot(steps, env, scores)
+            print('', end='')
+        print(f'Finished episode {i_episode} with reward: {sum(scores)}')
 
 
     # SAVE
@@ -42,7 +46,7 @@ if __name__ == '__main__':
 
     # --------------------------- # CREATE ENV # -------------------------- #
     NUMBER_OF_AGENTS = 1
-    MAX_STEPS = 10
+    MAX_STEPS = 25
     # SIDE_SIZE = 8
     SIDE_SIZE = 16
     # SIDE_SIZE = 32

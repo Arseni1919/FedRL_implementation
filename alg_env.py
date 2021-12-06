@@ -1,3 +1,5 @@
+import math
+
 from alg_GLOBALS import *
 
 
@@ -21,6 +23,7 @@ class Agent:
         self.metric_radius = metric_radius
         self.name = f'agent_{self.type}_{self.id}'
         self. domain = []
+        self.state = []
         self.distance_type = 'chebyshev'
         # self.distance_type = 'cityblock'
         self.marker = 'p'
@@ -35,7 +38,7 @@ class Agent:
             raise RuntimeError('Unknown type!')
 
 
-def set_domain_of_agents(agents, positions):
+def set_domain_and_state_of_agents(agents, positions):
     for agent in agents:
         agent.domain = []
         pos_dict = {(pos.x, pos.y): pos for pos in positions}
@@ -47,6 +50,15 @@ def set_domain_of_agents(agents, positions):
             if dist <= agent.metric_radius:
                 # if not pos.occupied:
                 agent.domain.append(pos)
+
+        side = agent.metric_radius * 2 + 1
+        agent.state = np.zeros((side, side))
+        for pos in agent.domain:
+            agent.state[agent.metric_radius - (agent.y - pos.y), agent.metric_radius - (agent.x - pos.x)] = float(pos.block)
+
+
+def distance(pos1, pos2):
+    return math.sqrt(((pos1.x - pos2.x)**2) + ((pos1.y - pos2.y)**2))
 
 
 class FedRLEnv:
@@ -93,31 +105,47 @@ class FedRLEnv:
 
         # CREATE AGENTS
         self.agents = []
-        free_positions = list(filter(lambda x: x.occupied, self.positions))
+        free_positions = list(filter(lambda x: not x.occupied, self.positions))
         pos1, pos2 = random.sample(free_positions, 2)
         self.agents.append(Agent(pos1.x, pos1.y, 101, 'alpha', metric_radius=1))
         self.agents.append(Agent(pos2.x, pos2.y, 201, 'beta', metric_radius=2))
         pos1.occupied = True
         pos2.occupied = True
-        set_domain_of_agents(self.agents, self.positions)
+        set_domain_and_state_of_agents(self.agents, self.positions)
 
         self.agent_dict = {agent.name: agent for agent in self.agents}
         self.pos_dict = {(pos.x, pos.y): pos for pos in self.positions}
-        return
+
+        observations = {agent.name: agent.state for agent in self.agents}
+        return observations
 
     def step(self, actions):
         # ACTION: 0,1,2,3,4 = stay ! ,  east > , south v , west < , north ^
-        observations, rewards, done, infos = {}, {}, False, {}
+        observations, done, infos = {}, False, {}
+        rewards = {agent.name: 0 for agent in self.agents}
 
         # EXECUTE ACTIONS
         for agent_name, action in actions.items():
-            self._execute_action(agent_name, action)
-        set_domain_of_agents(self.agents, self.positions)
+            r_l_1 = self._execute_action(agent_name, action)
+            rewards[agent_name] += r_l_1
+        set_domain_and_state_of_agents(self.agents, self.positions)
 
-        # STOP CONDITION
+        # OBSERVATIONS
+        observations = {agent.name: agent.state for agent in self.agents}
+
+        # REWARDS
+        dist = cdist([[self.agents[0].x, self.agents[0].y]], [[self.agents[1].x, self.agents[1].y]], 'cityblock')[0, 0]
+        r_g = 50 if dist <= 2 else 0
+        r_g += self.side_size / dist
+        for agent in self.agents:
+            rewards[agent.name] += r_g
+
+        # DONE
         self.steps_counter += 1
         if self.steps_counter == self.max_steps:
             done = True
+
+        # INFO
 
         return observations, rewards, done, infos
 
@@ -133,7 +161,7 @@ class FedRLEnv:
 
         # stay
         if action == 0:
-            return
+            return -1
 
         new_x, new_y = agent.x, agent.y
         curr_pos = self.pos_dict[(new_x, new_y)]
@@ -145,12 +173,17 @@ class FedRLEnv:
 
         if (new_x, new_y) in self.pos_dict:
             pos = self.pos_dict[(new_x, new_y)]
-            if not pos.occupied and not pos.block:
+            if not pos.block:
                 # print(f'occ: {pos.occupied}, block: {pos.block}')
                 curr_pos.occupied = False
                 agent.x = new_x
                 agent.y = new_y
                 pos.occupied = True
+                return -1
+            else:
+                return -10
+
+        return -1
 
     def render(self, mode='human'):
         return 'Plot is unavailable'
