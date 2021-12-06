@@ -23,7 +23,8 @@ class Agent:
         self.metric_radius = metric_radius
         self.state_side_size = self.metric_radius * 2 + 1
         self.state_size = self.state_side_size ** 2
-        self.name = f'agent_{self.type}_{self.id}'
+        # self.name = f'agent_{self.type}_{self.id}'
+        self.name = f'{self.type}'
         self. domain = []
         self.state = []
         self.distance_type = 'chebyshev'

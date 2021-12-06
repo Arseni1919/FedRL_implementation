@@ -16,6 +16,7 @@ def train():
         while not done:
 
             # COMPUTE C_BETA
+            C_beta = beta_compute_q_beta(observations)
             # TODO
 
             # SELECT ACTION
@@ -63,6 +64,21 @@ def train():
         # if average_score > best_score:
         #     best_score = average_score
         #     save_results(SAVE_PATH, actor)
+
+
+def beta_compute_q_beta(observations):
+    C_beta = 0
+    beta_obs = observations['beta']
+
+    return C_beta
+
+
+def beta_compute_q_beta_j():
+    pass
+
+
+def beta_update_q():
+    pass
 
 
 def load_and_play(env_to_load, times, path):
