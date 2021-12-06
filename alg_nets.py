@@ -41,7 +41,7 @@ class CriticNet(nn.Module):
         super(CriticNet, self).__init__()
 
         self.obs_net = nn.Sequential(
-            nn.Linear(obs_size * n_agents, 64),
+            nn.Linear(obs_size * n_agents + n_actions, 64),
             nn.ReLU(),
             nn.Linear(64, 64),
             nn.ReLU(),

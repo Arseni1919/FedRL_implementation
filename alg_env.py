@@ -21,6 +21,8 @@ class Agent:
         self.id = agent_id
         self.type = agent_type
         self.metric_radius = metric_radius
+        self.state_side_size = self.metric_radius * 2 + 1
+        self.state_size = self.state_side_size ** 2
         self.name = f'agent_{self.type}_{self.id}'
         self. domain = []
         self.state = []
@@ -81,17 +83,7 @@ class FedRLEnv:
 
         # FOR RENDERING
 
-    def observation_space(self, agent):
-        return
 
-    def observation_size(self, agent):
-        return
-
-    def action_space(self, agent):
-        return list(range(4))
-
-    def action_size(self, agent):
-        return
 
     def reset(self):
         self.steps_counter = 0
@@ -187,3 +179,15 @@ class FedRLEnv:
 
     def render(self, mode='human'):
         return 'Plot is unavailable'
+
+    def observation_spaces(self):
+        return {agent.name: agent.state for agent in self.agents}
+
+    def observation_sizes(self):
+        return {agent.name: agent.state_size for agent in self.agents}
+
+    def action_spaces(self):
+        return {agent.name: list(range(5)) for agent in self.agents}
+
+    def action_sizes(self):
+        return {agent.name: 5 for agent in self.agents}

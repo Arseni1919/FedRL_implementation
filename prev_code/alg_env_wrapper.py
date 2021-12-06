@@ -95,8 +95,8 @@ class SingleAgentEnv:
         self.env_name = env_name
         self.plotter = plotter
         self.env = gym.make(env_name)
-        self.action_space = self.env.action_space
-        self.observation_space = self.env.observation_space
+        self.action_space = self.env.action_spaces
+        self.observation_space = self.env.observation_spaces
         self.state_stat = RunningStateStat(self.env.reset())
 
     def reset(self):
@@ -109,12 +109,12 @@ class SingleAgentEnv:
         self.env.render()
 
     def sample_action(self):
-        action = self.env.action_space.sample()
+        action = self.env.action_spaces.sample()
         action = Variable(torch.tensor(action, requires_grad=True).float().unsqueeze(0))
         return action
 
     def sample_observation(self):
-        observation = self.env.observation_space.sample()
+        observation = self.env.observation_spaces.sample()
         observation = torch.tensor(observation, requires_grad=True).float().unsqueeze(0)
         observation = self.state_stat.get_normalized(observation)
         return observation
@@ -148,18 +148,18 @@ class SingleAgentEnv:
         self.env.close()
 
     def observation_size(self):
-        if isinstance(self.env.observation_space, gym.spaces.Discrete):
-            return self.env.observation_space.n
-        if isinstance(self.env.observation_space, gym.spaces.Box):
-            return self.env.observation_space.shape[0]
+        if isinstance(self.env.observation_spaces, gym.spaces.Discrete):
+            return self.env.observation_spaces.n
+        if isinstance(self.env.observation_spaces, gym.spaces.Box):
+            return self.env.observation_spaces.shape[0]
         return None
 
     def action_size(self):
-        if isinstance(self.env.action_space, gym.spaces.Discrete):
+        if isinstance(self.env.action_spaces, gym.spaces.Discrete):
             # self.parallel_env.action_space.n
             return 1
-        if isinstance(self.env.action_space, gym.spaces.Box):
-            return self.env.action_space.shape[0]
+        if isinstance(self.env.action_spaces, gym.spaces.Box):
+            return self.env.action_spaces.shape[0]
         return None
 
 
