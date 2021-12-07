@@ -1,7 +1,10 @@
+import torch
+
 from alg_GLOBALS import *
 from alg_plotter import ALGPlotter
 from alg_env import FedRLEnv
 from alg_nets import CriticNet, ActorNet
+from alg_functions import load_and_play
 
 
 def train():
@@ -25,15 +28,16 @@ def train():
             C_beta, t_beta_action = beta_compute_q_beta(t_beta_obs, epsilon)
 
             # SELECT ACTION
-            t_alpha_beta_obs = torch.cat((t_alpha_obs.reshape((-1,)), C_beta.unsqueeze(0)))
             if random.random() < epsilon:
                 t_alpha_action = torch.tensor(random.choice(env.action_spaces()['alpha']))
-
-                C_f_alpha = Q_f_alpha(t_alpha_beta_obs)[t_alpha_action]
             else:
-                t_alpha_action = torch.argmax(Q_f_alpha(t_alpha_beta_obs))
-                C_f_alpha = torch.max(Q_f_alpha(t_alpha_beta_obs))
-
+                t_alpha_action_q_values = Q_alpha(t_alpha_obs)
+                q_f_alpha_values_list = []
+                for t_action_q_value in t_alpha_action_q_values:
+                    input_q_f = torch.stack((t_action_q_value, C_beta))
+                    q_f_alpha_values_list.append(Q_f_alpha(input_q_f))
+                q_f_alpha_values_list = torch.stack(q_f_alpha_values_list)
+                t_alpha_action = torch.argmax(q_f_alpha_values_list)
             t_actions = {'alpha': t_alpha_action, 'beta': t_beta_action}
 
             # EXECUTE ACTION
@@ -51,8 +55,15 @@ def train():
             C_beta = beta_compute_q_beta_j(sample_index)
 
             # COMPUTE Y
-            t_sample_alpha_beta_obs = torch.cat((t_sample_alpha_new_observation.reshape((-1,)), C_beta.unsqueeze(0)))
-            y_j = t_sample_alpha_reward + GAMMA * torch.max(Q_f_alpha(t_sample_alpha_beta_obs))
+            t_sample_alpha_action_q_values = Q_alpha(t_sample_alpha_new_observation)  # !
+            q_f_alpha_values_list = []
+            for t_sample_action_q_value in t_sample_alpha_action_q_values:
+                input_q_f = torch.stack((t_sample_action_q_value, C_beta))
+                q_f_alpha_values_list.append(Q_f_alpha(input_q_f))
+            q_f_alpha_values_list = torch.stack(q_f_alpha_values_list)
+            max_C_f_alpha = torch.max(q_f_alpha_values_list)
+
+            y_j = t_sample_alpha_reward + GAMMA * max_C_f_alpha
             # t_sample_alpha_max_a = torch.argmax(Q_f_alpha(t_sample_alpha_beta_obs))
 
             # UPDATE ALPHA
@@ -107,52 +118,25 @@ def beta_update_q(y_j, sample_index, C_alpha):
     t_sample_beta_obs, t_sample_beta_action = sample_tuple_beta
 
     # UPDATE BETA
-    t_action = Q_beta(t_sample_beta_obs)[t_sample_beta_action]
-    t_sample_alpha_beta_obs = torch.cat((C_alpha.unsqueeze(0), t_sample_beta_obs.reshape((-1,))))
-    q_f_beta = Q_f_beta(t_sample_alpha_beta_obs)[t_action]
-    beta_loss = nn.MSELoss()
-    y_j = y_j.detach()
-    beta_loss(q_f_beta, y_j)
+    C_beta = Q_beta(t_sample_beta_obs)[t_sample_beta_action]
+    input_q_f = torch.stack((C_alpha, C_beta))
+    q_f_beta = Q_f_beta(input_q_f).squeeze().float()
+    y_j = y_j.detach().float()
+    beta_loss = nn.MSELoss()(q_f_beta, y_j)
     Q_beta_optim.zero_grad()
     beta_loss.backward()
     Q_beta_optim.step()
 
 
 def alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta):
-    t_action = Q_alpha(t_sample_alpha_obs)[t_sample_alpha_action]
-    t_sample_alpha_beta_obs = torch.cat((t_sample_alpha_obs.reshape((-1,)), C_beta.unsqueeze(0)))
-    q_f_alpha = Q_f_alpha(t_sample_alpha_beta_obs)[t_action]
-    alpha_loss = nn.MSELoss()
-    y_j = y_j.detach()
-    alpha_loss(q_f_alpha, y_j)
+    C_alpha = Q_alpha(t_sample_alpha_obs)[t_sample_alpha_action]
+    input_q_f = torch.stack((C_alpha, C_beta))
+    q_f_alpha = Q_f_alpha(input_q_f).squeeze().float()
+    y_j = y_j.detach().float()
+    alpha_loss = nn.MSELoss()(q_f_alpha, y_j)
     Q_alpha_optim.zero_grad()
     alpha_loss.backward()
     Q_alpha_optim.step()
-
-
-def load_and_play(env_to_load, times, path):
-    # load env
-    # TODO
-
-    # play
-    best_score = - math.inf
-    for i_episode in range(times):
-
-        done = False
-        steps = 0
-        scores = []
-        observations = env.reset()
-
-        while not done:
-            actions = {agent.name: random.choice(env.action_spaces()[agent.name]) for agent in env.agents}
-            new_observations, rewards, done, infos = env.step(actions)
-
-            observations = new_observations
-            scores.append(sum(rewards.values()))
-            steps += 1
-            plotter.plot(steps, env, scores)
-            print('', end='')
-        print(f'Finished episode {i_episode} with reward: {sum(scores)}')
 
 
 if __name__ == '__main__':
@@ -182,10 +166,10 @@ if __name__ == '__main__':
     for i_agent in env.agents:
         if i_agent.type == 'alpha':
             Q_alpha = ActorNet(i_agent.state_size, 5)
-            Q_f_alpha = ActorNet(i_agent.state_size + 1, 6)
+            Q_f_alpha = ActorNet(2, 1)
         if i_agent.type == 'beta':
             Q_beta = ActorNet(i_agent.state_size, 5)
-            Q_f_beta = ActorNet(i_agent.state_size + 1, 6)
+            Q_f_beta = ActorNet(2, 1)
 
     # --------------------------- # OPTIMIZERS # -------------------------- #
     Q_alpha_optim = torch.optim.Adam(Q_alpha.parameters(), lr=LR_CRITIC)
@@ -222,4 +206,4 @@ if __name__ == '__main__':
 
     # Example Plays
     print(colored('Example run...', 'green'))
-    load_and_play(env, 1, SAVE_PATH)
+    load_and_play(env, 1, SAVE_PATH, plotter, env)
