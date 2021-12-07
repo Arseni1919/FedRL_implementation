@@ -183,7 +183,8 @@ if __name__ == '__main__':
 
     # --------------------------- # FOR PLOT # -------------------------- #
     PLOT_PER = 1
-    NEPTUNE = False
+    # NEPTUNE = False
+    NEPTUNE = True
     PLOT_LIVE = True
     SAVE_RESULTS = True
     SAVE_PATH = f'data/critic_{ENV_NAME}.pt'
