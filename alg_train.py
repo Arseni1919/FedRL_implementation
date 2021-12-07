@@ -51,15 +51,15 @@ def train():
             C_beta = beta_compute_q_beta_j(sample_index)
 
             # COMPUTE Y
-            t_sample_alpha_beta_obs = torch.cat((t_sample_alpha_obs.reshape((-1,)), C_beta.unsqueeze(0)))
+            t_sample_alpha_beta_obs = torch.cat((t_sample_alpha_new_observation.reshape((-1,)), C_beta.unsqueeze(0)))
             y_j = t_sample_alpha_reward + GAMMA * torch.max(Q_f_alpha(t_sample_alpha_beta_obs))
-            t_sample_alpha_max_a = torch.argmax(Q_f_alpha(t_sample_alpha_beta_obs))
+            # t_sample_alpha_max_a = torch.argmax(Q_f_alpha(t_sample_alpha_beta_obs))
 
             # UPDATE ALPHA
-            # TODO
+            alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta)
 
             # COMPUTE C_ALPHA
-            C_alpha = Q_alpha(t_sample_alpha_obs)[t_sample_alpha_max_a]
+            C_alpha = Q_alpha(t_sample_alpha_obs)[t_sample_alpha_action]
 
             # UPDATE BETA
             beta_update_q(y_j, sample_index, C_alpha)
@@ -107,7 +107,27 @@ def beta_update_q(y_j, sample_index, C_alpha):
     t_sample_beta_obs, t_sample_beta_action = sample_tuple_beta
 
     # UPDATE BETA
-    # TODO
+    t_action = Q_beta(t_sample_beta_obs)[t_sample_beta_action]
+    t_sample_alpha_beta_obs = torch.cat((C_alpha.unsqueeze(0), t_sample_beta_obs.reshape((-1,))))
+    q_f_beta = Q_f_beta(t_sample_alpha_beta_obs)[t_action]
+    beta_loss = nn.MSELoss()
+    y_j = y_j.detach()
+    beta_loss(q_f_beta, y_j)
+    Q_beta_optim.zero_grad()
+    beta_loss.backward()
+    Q_beta_optim.step()
+
+
+def alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta):
+    t_action = Q_alpha(t_sample_alpha_obs)[t_sample_alpha_action]
+    t_sample_alpha_beta_obs = torch.cat((t_sample_alpha_obs.reshape((-1,)), C_beta.unsqueeze(0)))
+    q_f_alpha = Q_f_alpha(t_sample_alpha_beta_obs)[t_action]
+    alpha_loss = nn.MSELoss()
+    y_j = y_j.detach()
+    alpha_loss(q_f_alpha, y_j)
+    Q_alpha_optim.zero_grad()
+    alpha_loss.backward()
+    Q_alpha_optim.step()
 
 
 def load_and_play(env_to_load, times, path):
