@@ -6,79 +6,108 @@ from alg_nets import CriticNet, ActorNet
 
 def train():
     best_score = - math.inf
+    global_steps = 0
     for i_episode in range(M_EPISODE):
 
         done = False
         steps = 0
         scores = []
-        observations = env.reset()
+        t_observations = env.reset()
 
         while not done:
 
+            # PREPARATION
+            epsilon = EPSILON_MAX - global_steps / (M_EPISODE * MAX_STEPS) * (EPSILON_MAX - EPSILON_MIN)
+            t_alpha_obs = t_observations['alpha']
+            t_beta_obs = t_observations['beta']
+
             # COMPUTE C_BETA
-            C_beta = beta_compute_q_beta(observations)
-            # TODO
+            C_beta, t_beta_action = beta_compute_q_beta(t_beta_obs, epsilon)
 
             # SELECT ACTION
-            actions = {agent.name: random.choice(env.action_spaces()[agent.name]) for agent in env.agents}
-            # TODO
+            t_alpha_beta_obs = torch.cat((t_alpha_obs.reshape((-1,)), C_beta.unsqueeze(0)))
+            if random.random() < epsilon:
+                t_alpha_action = torch.tensor(random.choice(env.action_spaces()['alpha']))
+
+                C_f_alpha = Q_f_alpha(t_alpha_beta_obs)[t_alpha_action]
+            else:
+                t_alpha_action = torch.argmax(Q_f_alpha(t_alpha_beta_obs))
+                C_f_alpha = torch.max(Q_f_alpha(t_alpha_beta_obs))
+
+            t_actions = {'alpha': t_alpha_action, 'beta': t_beta_action}
 
             # EXECUTE ACTION
-            new_observations, rewards, done, infos = env.step(actions)
-            # TODO
+            t_new_observations, t_rewards, done, infos = env.step(t_actions)
 
             # OBSERVE AND STORE
-            # TODO
+            replay_buffer_alpha.append((t_alpha_obs, t_alpha_action, t_rewards['alpha'], t_new_observations['alpha']))
 
             # SAMPLE
-            # TODO
+            sample_index = random.randint(0, len(replay_buffer_alpha) - 1)
+            sample_tuple_alpha = replay_buffer_alpha[sample_index]
+            t_sample_alpha_obs, t_sample_alpha_action, t_sample_alpha_reward, t_sample_alpha_new_observation = sample_tuple_alpha
 
             # CALL C_BETA
-            # TODO
+            C_beta = beta_compute_q_beta_j(sample_index)
 
             # COMPUTE Y
-            # TODO
+            t_sample_alpha_beta_obs = torch.cat((t_sample_alpha_obs.reshape((-1,)), C_beta.unsqueeze(0)))
+            y_j = t_sample_alpha_reward + GAMMA * torch.max(Q_f_alpha(t_sample_alpha_beta_obs))
+            t_sample_alpha_max_a = torch.argmax(Q_f_alpha(t_sample_alpha_beta_obs))
 
             # UPDATE ALPHA
             # TODO
 
             # COMPUTE C_ALPHA
-            # TODO
+            C_alpha = Q_alpha(t_sample_alpha_obs)[t_sample_alpha_max_a]
 
             # UPDATE BETA
-            # TODO
+            beta_update_q(y_j, sample_index, C_alpha)
 
             # UPDATE OBSERVATIONS VARIABLE
-            observations = new_observations
+            t_observations = t_new_observations
 
             # PLOT
-            scores.append(sum(rewards.values()))
+            scores.append(sum(t_rewards.values()).item())
             steps += 1
+            global_steps += 1
             plotter.plot(steps, env, scores)
-            print('', end='')
+            plotter.neptune_plot({'epsilon': epsilon})
 
         # PRINT AND SAVE
         print(f'Finished episode {i_episode} with reward: {sum(scores)}')
-        # SAVE
         # average_score = sum(average_result_dict.values())
         # if average_score > best_score:
         #     best_score = average_score
         #     save_results(SAVE_PATH, actor)
 
 
-def beta_compute_q_beta(observations):
-    C_beta = 0
-    beta_obs = observations['beta']
+def beta_compute_q_beta(t_beta_obs, epsilon):
 
+    if random.random() < epsilon:
+        t_beta_action = torch.tensor(random.choice(env.action_spaces()['beta']))
+        C_beta = Q_beta(t_beta_obs)[t_beta_action]
+    else:
+        t_beta_action = torch.argmax(Q_beta(t_beta_obs))
+        C_beta = torch.max(Q_beta(t_beta_obs))
+    replay_buffer_beta.append((t_beta_obs, t_beta_action))
+
+    return C_beta, t_beta_action
+
+
+def beta_compute_q_beta_j(sample_index):
+    sample_tuple_beta = replay_buffer_beta[sample_index]
+    t_beta_obs, t_beta_action = sample_tuple_beta
+    C_beta = Q_beta(t_beta_obs)[t_beta_action]
     return C_beta
 
 
-def beta_compute_q_beta_j():
-    pass
+def beta_update_q(y_j, sample_index, C_alpha):
+    sample_tuple_beta = replay_buffer_beta[sample_index]
+    t_sample_beta_obs, t_sample_beta_action = sample_tuple_beta
 
-
-def beta_update_q():
-    pass
+    # UPDATE BETA
+    # TODO
 
 
 def load_and_play(env_to_load, times, path):
@@ -114,6 +143,8 @@ if __name__ == '__main__':
     LR_CRITIC = 1e-2  # learning rate
     LR_ACTOR = 1e-2  # learning rate
     GAMMA = 0.95  # discount factor
+    EPSILON_MAX = 0.9
+    EPSILON_MIN = 0.01
 
     # --------------------------- # CREATE ENV # -------------------------- #
     NUMBER_OF_AGENTS = 1
@@ -130,11 +161,11 @@ if __name__ == '__main__':
     Q_alpha, Q_f_alpha, Q_beta, Q_f_beta = None, None, None, None
     for i_agent in env.agents:
         if i_agent.type == 'alpha':
-            Q_alpha = CriticNet(i_agent.state_size, 5)
-            Q_f_alpha = CriticNet(i_agent.state_size, 6)
+            Q_alpha = ActorNet(i_agent.state_size, 5)
+            Q_f_alpha = ActorNet(i_agent.state_size + 1, 6)
         if i_agent.type == 'beta':
-            Q_beta = CriticNet(i_agent.state_size, 5)
-            Q_f_beta = CriticNet(i_agent.state_size, 6)
+            Q_beta = ActorNet(i_agent.state_size, 5)
+            Q_f_beta = ActorNet(i_agent.state_size + 1, 6)
 
     # --------------------------- # OPTIMIZERS # -------------------------- #
     Q_alpha_optim = torch.optim.Adam(Q_alpha.parameters(), lr=LR_CRITIC)

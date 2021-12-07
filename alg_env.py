@@ -108,10 +108,12 @@ class FedRLEnv:
         self.agent_dict = {agent.name: agent for agent in self.agents}
         self.pos_dict = {(pos.x, pos.y): pos for pos in self.positions}
 
-        observations = {agent.name: agent.state for agent in self.agents}
-        return observations
+        t_observations = {agent.name: torch.tensor(agent.state) for agent in self.agents}
 
-    def step(self, actions):
+        return t_observations
+
+    def step(self, t_actions):
+        actions = {agent_name: action.detach().numpy() for agent_name, action in t_actions.items()}
         # ACTION: 0,1,2,3,4 = stay ! ,  east > , south v , west < , north ^
         observations, done, infos = {}, False, {}
         rewards = {agent.name: 0 for agent in self.agents}
@@ -138,8 +140,13 @@ class FedRLEnv:
             done = True
 
         # INFO
+        pass
 
-        return observations, rewards, done, infos
+        # TO TENSOR
+        t_observations = {agent_name: torch.tensor(obs) for agent_name, obs in observations.items()}
+        t_rewards = {agent_name: torch.tensor(reward) for agent_name, reward in rewards.items()}
+
+        return t_observations, t_rewards, done, infos
 
     def close(self):
         pass
@@ -150,32 +157,30 @@ class FedRLEnv:
     def _execute_action(self, agent_name, action):
         # ACTION: 0,1,2,3,4 = stay ! ,  east > , south v , west < , north ^
         agent = self.agent_dict[agent_name]
-
+        return_value = -1
         # stay
-        if action == 0:
-            return -1
+        if action != 0:
+            new_x, new_y = agent.x, agent.y
+            curr_pos = self.pos_dict[(new_x, new_y)]
 
-        new_x, new_y = agent.x, agent.y
-        curr_pos = self.pos_dict[(new_x, new_y)]
+            new_x = new_x + 1 if action == 1 else new_x  # east >
+            new_y = new_y - 1 if action == 2 else new_y  # south v
+            new_x = new_x - 1 if action == 3 else new_x  # west <
+            new_y = new_y + 1 if action == 4 else new_y  # north ^
 
-        new_x = new_x + 1 if action == 1 else new_x  # east >
-        new_y = new_y - 1 if action == 2 else new_y  # south v
-        new_x = new_x - 1 if action == 3 else new_x  # west <
-        new_y = new_y + 1 if action == 4 else new_y  # north ^
+            if (new_x, new_y) in self.pos_dict:
+                pos = self.pos_dict[(new_x, new_y)]
+                if not pos.block:
+                    # print(f'occ: {pos.occupied}, block: {pos.block}')
+                    curr_pos.occupied = False
+                    agent.x = new_x
+                    agent.y = new_y
+                    pos.occupied = True
+                else:
+                    return_value = -10
 
-        if (new_x, new_y) in self.pos_dict:
-            pos = self.pos_dict[(new_x, new_y)]
-            if not pos.block:
-                # print(f'occ: {pos.occupied}, block: {pos.block}')
-                curr_pos.occupied = False
-                agent.x = new_x
-                agent.y = new_y
-                pos.occupied = True
-                return -1
-            else:
-                return -10
-
-        return -1
+        # t_return_value = torch.tensor(return_value)
+        return return_value
 
     def render(self, mode='human'):
         return 'Plot is unavailable'

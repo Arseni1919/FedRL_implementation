@@ -19,15 +19,16 @@ class ActorNet(nn.Module):
             nn.ELU(),
             nn.Linear(64, n_actions),
             # nn.Tanh()
-            nn.Sigmoid(),
+            # nn.Sigmoid(),
         )
 
         self.n_actions = n_actions
         self.obs_size = obs_size
         self.entropy_term = 0
 
-    def forward(self, state):
-        value = self.net(state)
+    def forward(self, state: torch.FloatTensor):
+        reshaped_state = state.reshape((-1,)).float()
+        value = self.net(reshaped_state)
         return value
 
 
