@@ -88,10 +88,13 @@ class ALGPlotter:
                     for pos in agent.domain:
                         self.ax_1.plot(pos.x, pos.y, color=agent.color, marker=agent.marker, markersize=14, alpha=0.2)
 
+                # PLOT PATHS
+                # TODO
+
                 # self.ax_1.legend()
                 self.ax_1.set_title('Env')
 
-                # AX 4
+                # AX 2
                 self.ax_2.cla()
                 self.ax_2.plot(scores, label='scores')
                 avg_scores = get_weighted_coverage_list(scores)

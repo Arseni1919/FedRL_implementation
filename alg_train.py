@@ -8,6 +8,7 @@ from alg_functions import load_and_play
 
 
 def train():
+    print(colored('Started train.', 'green'))
     best_score = - math.inf
     global_steps = 0
     for i_episode in range(M_EPISODE):
@@ -67,13 +68,13 @@ def train():
             # t_sample_alpha_max_a = torch.argmax(Q_f_alpha(t_sample_alpha_beta_obs))
 
             # UPDATE ALPHA
-            alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta)
+            alpha_loss = alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta)
 
             # COMPUTE C_ALPHA
             C_alpha = Q_alpha(t_sample_alpha_obs)[t_sample_alpha_action]
 
             # UPDATE BETA
-            beta_update_q(y_j, sample_index, C_alpha)
+            beta_loss = beta_update_q(y_j, sample_index, C_alpha)
 
             # UPDATE OBSERVATIONS VARIABLE
             t_observations = t_new_observations
@@ -82,15 +83,24 @@ def train():
             scores.append(sum(t_rewards.values()).item())
             steps += 1
             global_steps += 1
-            plotter.plot(steps, env, scores)
-            plotter.neptune_plot({'epsilon': epsilon})
+            plotter.neptune_plot({
+                'epsilon': epsilon,
+                'alpha_loss': alpha_loss.item(), 'beta_loss': beta_loss.item(),
+                'action alpha': t_alpha_action.item(), 'action beta': t_beta_action.item(),
+                'state alpha': t_alpha_obs.mean().item(), 'state beta': t_beta_obs.mean().item(),
+                'buffer size':  len(replay_buffer_alpha),
+            })
+            if i_episode > M_EPISODE - 3:
+                plotter.plot(steps, env, scores)
 
         # PRINT AND SAVE
-        print(f'Finished episode {i_episode} with reward: {sum(scores)}')
+        print(f'Finished episode {i_episode + 1} with reward: {sum(scores)}')
+        plotter.neptune_plot({'episode scores': sum(scores)})
         # average_score = sum(average_result_dict.values())
         # if average_score > best_score:
         #     best_score = average_score
         #     save_results(SAVE_PATH, actor)
+    print(colored('Finished train.', 'green'))
 
 
 def beta_compute_q_beta(t_beta_obs, epsilon):
@@ -126,6 +136,7 @@ def beta_update_q(y_j, sample_index, C_alpha):
     Q_beta_optim.zero_grad()
     beta_loss.backward()
     Q_beta_optim.step()
+    return beta_loss
 
 
 def alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta):
@@ -137,22 +148,22 @@ def alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta):
     Q_alpha_optim.zero_grad()
     alpha_loss.backward()
     Q_alpha_optim.step()
+    return alpha_loss
 
 
 if __name__ == '__main__':
     # --------------------------- # PARAMETERS # -------------------------- #
-    N_UPDATES = 20
-    M_EPISODE = 20
+    M_EPISODE = 10
     BATCH_SIZE = 64  # size of the batches
-    LR_CRITIC = 1e-2  # learning rate
-    LR_ACTOR = 1e-2  # learning rate
+    BUFFER_SIZE = 1000
+    LR_CRITIC = 1e-3  # learning rate
+    LR_ACTOR = 1e-3  # learning rate
     GAMMA = 0.95  # discount factor
     EPSILON_MAX = 0.9
     EPSILON_MIN = 0.01
 
     # --------------------------- # CREATE ENV # -------------------------- #
-    NUMBER_OF_AGENTS = 1
-    MAX_STEPS = 10
+    MAX_STEPS = 25
     # SIDE_SIZE = 8
     SIDE_SIZE = 16
     # SIDE_SIZE = 32
@@ -178,13 +189,13 @@ if __name__ == '__main__':
     Q_f_beta_optim = torch.optim.Adam(Q_f_beta.parameters(), lr=LR_CRITIC)
 
     # --------------------------- # REPLAY BUFFER # -------------------------- #
-    replay_buffer_alpha = deque(maxlen=10000)
-    replay_buffer_beta = deque(maxlen=10000)
+    replay_buffer_alpha = deque(maxlen=BUFFER_SIZE)
+    replay_buffer_beta = deque(maxlen=BUFFER_SIZE)
 
     # --------------------------- # FOR PLOT # -------------------------- #
     PLOT_PER = 1
-    # NEPTUNE = False
-    NEPTUNE = True
+    NEPTUNE = False
+    # NEPTUNE = True
     PLOT_LIVE = True
     SAVE_RESULTS = True
     SAVE_PATH = f'data/critic_{ENV_NAME}.pt'
@@ -207,4 +218,6 @@ if __name__ == '__main__':
 
     # Example Plays
     print(colored('Example run...', 'green'))
-    load_and_play(env, 1, SAVE_PATH, plotter, env)
+    load_and_play(env, 1, SAVE_PATH, plotter)
+    print(colored('Finished.', 'green'))
+

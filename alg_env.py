@@ -113,7 +113,7 @@ class FedRLEnv:
         return t_observations
 
     def step(self, t_actions):
-        actions = {agent_name: action.detach().numpy() for agent_name, action in t_actions.items()}
+        actions = {agent_name: action.detach().item() for agent_name, action in t_actions.items()}
         # ACTION: 0,1,2,3,4 = stay ! ,  east > , south v , west < , north ^
         observations, done, infos = {}, False, {}
         rewards = {agent.name: 0 for agent in self.agents}
@@ -136,7 +136,7 @@ class FedRLEnv:
 
         # DONE
         self.steps_counter += 1
-        if self.steps_counter == self.max_steps:
+        if self.steps_counter == self.max_steps or dist <= 2:
             done = True
 
         # INFO
