@@ -171,7 +171,7 @@ if __name__ == '__main__':
     EPSILON_MIN = 0.01
 
     # --------------------------- # CREATE ENV # -------------------------- #
-    MAX_STEPS = 25
+    MAX_STEPS = 40
     # SIDE_SIZE = 8
     SIDE_SIZE = 16
     # SIDE_SIZE = 32
@@ -231,4 +231,9 @@ if __name__ == '__main__':
     print(colored('Example run...', 'green'))
     load_and_play(env, 1, SAVE_PATH, plotter)
     print(colored('Finished.', 'green'))
+
+    # TODO: change nets to be more close to DQN
+    # TODO: create batches and not one sample
+    # TODO: normalize the input of a net
+    # TODO: what is in this configuration target net, critic and actor
 
