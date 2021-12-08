@@ -202,7 +202,7 @@ if __name__ == '__main__':
     # NEPTUNE = True
     PLOT_LIVE = True
     SAVE_RESULTS = True
-    SAVE_PATH = f'data/critic_{ENV_NAME}.pt'
+    SAVE_PATH = f'data/models_{ENV_NAME}.pt'
     plotter = ALGPlotter(plot_life=PLOT_LIVE, plot_neptune=NEPTUNE, name='my_run_FedRL', tags=[ENV_NAME])
     plotter.neptune_init()
 
