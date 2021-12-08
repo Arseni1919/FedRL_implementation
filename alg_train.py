@@ -90,16 +90,18 @@ def train():
                 'state alpha': t_alpha_obs.mean().item(), 'state beta': t_beta_obs.mean().item(),
                 'buffer size':  len(replay_buffer_alpha),
             })
-            if i_episode > M_EPISODE - 3:
+            if i_episode > M_EPISODE - PLOT_LAST:
                 plotter.plot(steps, env, scores)
 
         # PRINT AND SAVE
         print(f'Finished episode {i_episode + 1} with reward: {sum(scores)}')
         plotter.neptune_plot({'episode scores': sum(scores)})
         # average_score = sum(average_result_dict.values())
-        # if average_score > best_score:
-        #     best_score = average_score
-        #     save_results(SAVE_PATH, actor)
+        if sum(scores) > best_score:
+            best_score = sum(scores)
+            torch.save({
+                'alpha': Q_alpha, 'beta': Q_beta,
+            }, SAVE_PATH)
     print(colored('Finished train.', 'green'))
 
 
@@ -194,6 +196,8 @@ if __name__ == '__main__':
 
     # --------------------------- # FOR PLOT # -------------------------- #
     PLOT_PER = 1
+    # PLOT_LAST = 3
+    PLOT_LAST = M_EPISODE
     NEPTUNE = False
     # NEPTUNE = True
     PLOT_LIVE = True
@@ -205,7 +209,7 @@ if __name__ == '__main__':
     # --------------------------- # PLOTTER INIT # -------------------------- #
 
     # --------------------------- # SEED # -------------------------- #
-    SEED = 111
+    SEED = 123
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)

@@ -88,8 +88,10 @@ class ALGPlotter:
                     for pos in agent.domain:
                         self.ax_1.plot(pos.x, pos.y, color=agent.color, marker=agent.marker, markersize=14, alpha=0.2)
 
-                # PLOT PATHS
-                # TODO
+                    # PLOT PATHS
+                    if len(agent.path) > 0:
+                        pos_list_x, pos_list_y = zip(*agent.path)
+                        self.ax_1.plot(pos_list_x, pos_list_y, color=agent.color, marker='X', markersize=7, linewidth=4, alpha=0.5)
 
                 # self.ax_1.legend()
                 self.ax_1.set_title('Env')

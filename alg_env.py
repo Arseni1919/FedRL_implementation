@@ -30,6 +30,7 @@ class Agent:
         self.distance_type = 'chebyshev'
         # self.distance_type = 'cityblock'
         self.marker = 'p'
+        self.path = []
 
         if self.type == 'alpha':
             self.color = 'r'
@@ -122,6 +123,8 @@ class FedRLEnv:
         for agent_name, action in actions.items():
             r_l_1 = self._execute_action(agent_name, action)
             rewards[agent_name] += r_l_1
+            agent = self.agent_dict[agent_name]
+            agent.path.append((agent.x, agent.y))
         set_domain_and_state_of_agents(self.agents, self.positions)
 
         # OBSERVATIONS
@@ -129,8 +132,8 @@ class FedRLEnv:
 
         # REWARDS
         dist = cdist([[self.agents[0].x, self.agents[0].y]], [[self.agents[1].x, self.agents[1].y]], 'cityblock')[0, 0]
-        r_g = 50 if dist <= 2 else 0
-        r_g += self.side_size / dist
+        r_g = 50 if dist <= 2 else self.side_size / dist
+        # r_g += self.side_size / dist
         for agent in self.agents:
             rewards[agent.name] += r_g
 
@@ -138,6 +141,8 @@ class FedRLEnv:
         self.steps_counter += 1
         if self.steps_counter == self.max_steps or dist <= 2:
             done = True
+            for agent in self.agents:
+                agent.path = []
 
         # INFO
         pass
