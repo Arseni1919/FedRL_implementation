@@ -113,6 +113,11 @@ def beta_compute_q_beta(t_beta_obs, epsilon):
     else:
         t_beta_action = torch.argmax(Q_beta(t_beta_obs))
         C_beta = torch.max(Q_beta(t_beta_obs))
+
+    # BETA - NO MOVE
+    t_beta_action = torch.tensor(0)
+    C_beta = Q_beta(t_beta_obs)[t_beta_action]
+
     replay_buffer_beta.append((t_beta_obs, t_beta_action))
 
     return C_beta, t_beta_action
@@ -155,7 +160,8 @@ def alpha_update_q(y_j, t_sample_alpha_obs, t_sample_alpha_action, C_beta):
 
 if __name__ == '__main__':
     # --------------------------- # PARAMETERS # -------------------------- #
-    M_EPISODE = 10
+    # M_EPISODE = 10
+    M_EPISODE = 70
     BATCH_SIZE = 64  # size of the batches
     BUFFER_SIZE = 1000
     LR_CRITIC = 1e-3  # learning rate
@@ -182,7 +188,8 @@ if __name__ == '__main__':
             Q_f_alpha = ActorNet(2, 1)
         if i_agent.type == 'beta':
             Q_beta = ActorNet(i_agent.state_size, 5)
-            Q_f_beta = ActorNet(2, 1)
+            # Q_f_beta = ActorNet(2, 1)
+            Q_f_beta = Q_f_alpha
 
     # --------------------------- # OPTIMIZERS # -------------------------- #
     Q_alpha_optim = torch.optim.Adam(Q_alpha.parameters(), lr=LR_CRITIC)
@@ -196,8 +203,8 @@ if __name__ == '__main__':
 
     # --------------------------- # FOR PLOT # -------------------------- #
     PLOT_PER = 1
-    # PLOT_LAST = 3
-    PLOT_LAST = M_EPISODE
+    PLOT_LAST = 3
+    # PLOT_LAST = M_EPISODE
     NEPTUNE = False
     # NEPTUNE = True
     PLOT_LIVE = True
