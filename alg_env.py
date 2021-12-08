@@ -99,7 +99,7 @@ class FedRLEnv:
         # CREATE AGENTS
         self.agents = []
         free_positions = list(filter(lambda x: not x.occupied, self.positions))
-        pos1, pos2 = random.sample(free_positions, 2)
+        pos1, pos2 = self._get_two_distant_positions(free_positions)
         self.agents.append(Agent(pos1.x, pos1.y, 101, 'alpha', metric_radius=1))
         self.agents.append(Agent(pos2.x, pos2.y, 201, 'beta', metric_radius=2))
         pos1.occupied = True
@@ -110,6 +110,9 @@ class FedRLEnv:
         self.pos_dict = {(pos.x, pos.y): pos for pos in self.positions}
 
         t_observations = {agent.name: torch.tensor(agent.state) for agent in self.agents}
+
+        for agent in self.agents:
+            agent.path = []
 
         return t_observations
 
@@ -141,8 +144,6 @@ class FedRLEnv:
         self.steps_counter += 1
         if self.steps_counter == self.max_steps or dist <= 2:
             done = True
-            for agent in self.agents:
-                agent.path = []
 
         # INFO
         pass
@@ -201,3 +202,19 @@ class FedRLEnv:
 
     def action_sizes(self):
         return {agent.name: 5 for agent in self.agents}
+
+    @staticmethod
+    def _get_two_distant_positions(free_positions):
+        pos1 = random.sample(free_positions, 1)[0]
+        max_dist = 0
+        max_pos = pos1
+        for pos in free_positions:
+            dist = distance(pos1, pos)
+            if dist > max_dist:
+                max_dist = dist
+                max_pos = pos
+        pos2 = max_pos
+
+        # pos1, pos2 = random.sample(free_positions, 2)
+
+        return pos1, pos2

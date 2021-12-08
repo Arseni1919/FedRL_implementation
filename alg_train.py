@@ -90,11 +90,11 @@ def train():
                 'state alpha': t_alpha_obs.mean().item(), 'state beta': t_beta_obs.mean().item(),
                 'buffer size':  len(replay_buffer_alpha),
             })
-            if i_episode > M_EPISODE - PLOT_LAST:
+            if i_episode > M_EPISODE - PLOT_LAST and done:
                 plotter.plot(steps, env, scores)
 
         # PRINT AND SAVE
-        print(f'Finished episode {i_episode + 1} with reward: {sum(scores)}')
+        print(f'Finished episode {i_episode + 1} ({steps} steps) with reward: {sum(scores)}')
         plotter.neptune_plot({'episode scores': sum(scores)})
         # average_score = sum(average_result_dict.values())
         if sum(scores) > best_score:
@@ -203,8 +203,8 @@ if __name__ == '__main__':
 
     # --------------------------- # FOR PLOT # -------------------------- #
     PLOT_PER = 1
-    PLOT_LAST = 3
-    # PLOT_LAST = M_EPISODE
+    # PLOT_LAST = 3
+    PLOT_LAST = M_EPISODE
     NEPTUNE = False
     # NEPTUNE = True
     PLOT_LIVE = True
